@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slice 2 Price</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configure Tailwind for Inter font and new color scheme -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        // NEW COLOR SCHEME: Baby Blue, Orange, Red
+                        'primary': '#4FC3F7', // Bright Baby Blue/Cyan (for main action/result/labels)
+                        'secondary': '#FF9800', // Bright Orange (for headers/accents)
+                        'accent-red': '#EF4444', // Tailwind Red 500 (for titles/discounts)
+                        'graphite': '#212121',
+                        'light-graphite': '#424242',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Base styling for Graphite background and industrial texture */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #212121; /* Graphite Black */
+            color: #E0E0E0; /* Light text */
+            /* Subtle Industrial Grid/Texture (30% opacity visualization) */
+            background-image: repeating-linear-gradient(
+                45deg,
+                rgba(76, 76, 76, 0.3) 0,
+                rgba(76, 76, 76, 0.3) 1px,
+                transparent 1px,
+                transparent 10px
+            );
+            background-size: 10px 10px;
+        }
+        .container-card {
+            background-color: #2C3E50; /* Slightly lighter inner background */
+            border: 1px solid #424242;
+        }
+        .input-group label {
+            font-weight: 600;
+            color: #4FC3F7; /* Baby Blue (Primary) labels, as requested for frame/labels */
+        }
+        input[type="number"], input[type="text"], select {
+            background-color: #323232;
+            border-color: #424242;
+            color: #E0E0E0;
+            transition: all 0.2s;
+        }
+        input[type="number"]:focus, input[type="text"]:focus, select:focus {
+            border-color: #FF9800; /* Focus glow is Orange */
+            box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.3);
+        }
+        .summary-box-cost {
+            background-color: #323232 !important;
+            border-color: #424242 !important;
+        }
+        .summary-box-profit {
+            background-color: #323232 !important;
+            border-color: #FF9800 !important;
+            color: #FF9800 !important;
+        }
+        /* Overriding primary/secondary classes to use new colors */
+        .text-secondary { color: #FF9800 !important; } /* Orange */
+        .text-primary { color: #4FC3F7 !important; } /* Baby Blue */
+        .bg-primary { background-color: #4FC3F7 !important; } /* Baby Blue */
+        .hover\:bg-orange-600:hover { background-color: #F57C00 !important; } /* Darker Orange hover */
+
+        /* Red for main title, discounts/warnings */
+        .text-accent-red { color: #EF4444 !important; } 
+        .text-red-500 { color: #EF4444 !important; }
+        .text-red-600 { color: #EF4444 !important; } 
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        <header class="text-center mb-8">
+            <!-- H1 Title is now Red -->
+            <h1 class="text-3xl md:text-4xl font-extrabold text-accent-red leading-tight">Slice 2 Price</h1>
+            <p class="text-gray-400 mt-2">Calculate your finished print price accurately, accounting for materials, time, and equipment depreciation.</p>
+        </header>
+
+        <div class="container-card p-6 md:p-8 rounded-xl shadow-2xl">
+
+            <div id="inputs" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <!-- 1. Pricing Model Selection - Orange Sub Header -->
+                <div class="md:col-span-2">
+                    <h2 class="text-xl font-bold text-secondary mb-3 border-b border-light-graphite pb-2">1. Select Pricing Model</h2>
+                    <div class="input-group mb-4">
+                        <label for="pricingModel" class="block text-sm">Choose Your Pricing Strategy</label>
+                        <select id="pricingModel" class="mt-1 w-full p-2 border rounded-lg focus:ring-secondary">
+                            <option value="cost_plus">Cost Plus (Total Cost + % Profit)</option>
+                            <option value="hybrid">Hybrid (Flat Fee + Time + Material)</option>
+                            <option value="per_gram">Per Gram</option>
+                            <option value="per_hour">Per Hour</option>
+                            <option value="tiered_volume">Tiered by Volume</option>
+                            <option value="value_based">Value Based (Customer Value)</option>
+                        </select>
+                        <p class="text-xs text-gray-400 mt-1">Changing the model will prioritize different inputs in the calculation.</p>
+                    </div>
+                </div>
+
+                <!-- 2. Currency & Setup - Orange Sub Header -->
+                <div class="md:col-span-2">
+                    <h2 class="text-xl font-bold text-secondary mb-3 border-b border-light-graphite pb-2">2. Setup & Currency</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="input-group">
+                            <label for="currencySymbol" class="block text-sm">Currency Symbol</label>
+                            <select id="currencySymbol" class="mt-1 w-full p-2 border rounded-lg focus:ring-primary">
+                                <option value="$">$ (USD/AUD/CAD)</option>
+                                <option value="€">€ (Euro)</option>
+                                <option value="£">£ (GBP)</option>
+                                <option value="E£">E£ (Egyptian Pound)</option>
+                                <option value="₹">₹ (Indian Rupee)</option>
+                                <option value="R">R (South African Rand)</option>
+                                <option value="¥">¥ (JPY/CNY)</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="printerCost" class="block text-sm">Printer Initial Cost ($)</label>
+                            <input type="number" id="printerCost" value="500" step="10" min="1" class="mt-1 w-full p-2 border rounded-lg focus:ring-primary">
+                        </div>
+                        <div class="input-group">
+                            <label for="breakevenHours" class="block text-sm">Total Expected Printer Life (Hours)</label>
+                            <input type="number" id="breakevenHours" value="2000" step="100" min="1" class="mt-1 w-full p-2 border rounded-lg focus:ring-primary">
+                            <p class="text-xs text-gray-400 mt-1">Used for calculating hourly depreciation.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Print & Material Costs - Orange Sub Header -->
+                <div id="section3Inputs">
+                    <h2 class="text-xl font-bold text-secondary mb-3 border-b border-light-graphite pb-2">3. Print & Material Costs</h2>
+                    <div class="space-y-4">
+                        <div class="input-group">
+                            <label for="filamentCostPerKg" class="block text-sm">Filament Cost (per kg)</label>
+                            <input type="number" id="filamentCostPerKg" value="25.00" step="0.5" min="0.01" class="mt-1 w-full p-2 border rounded-lg focus:ring-primary">
+                        </div>
+                        <div class="input-group">
+                            <label for="filamentUsedGrams" class="block text-sm">Filament Used (Grams)</label>
+                            <input type="number" id="filamentUsedGrams" value="50" step="1" min="1" class="mt-1 w-full p-2 border rounded-lg focus:ring-primary">
+                        </div>
+                        <div class="input-group">
+                            <label for="printTimeHours" class="block text-sm">Print Time (Hours)</label>
+                            <input type="number" id="printTimeHours" value="5.5" step="0.1" min="0.1" class="mt-1 w-full p-2 border rounded-lg focus:ring-primary">
+                        </div>
+                        <div class="input-group">
+                            <label for="printerPowerWatts" class="block text-sm">Printer Power Draw (Watts)</label>
+                            <input type="number" id="printerPowerWatts" value="150" step="10" min="1" class="mt-1 w-full p-2 border rounded-lg focus:ring-primary">
+                            <p class="text-xs text-gray-400 mt-1">Estimate power consumption during printing.</p>
+                        </div>
+                        <div class="input-group">
+                            <label for="elecRatePerKwh" class="block text-sm">Electricity Rate (per kWh)</label>
+                            <input type="number" id="elecRatePerKwh" value="0.15" step="0.01" min="0.001" class="mt-1 w-full p-2 border rounded-lg focus:ring-primary">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Labor & Profit - Orange Sub Header -->
+                <div>
+                    <h2 class="text-xl font-bold text-secondary mb-3 border-b border-light-graphite pb-2">4. Labor, Profit & Discounts</h2>
+                    <div class="space-y-4">
+                        
+                        <!-- Post Processing Required Toggle -->
+                        <div class="input-group flex items-center space-x-3 p-2 bg-light-graphite rounded-lg border border-gray-700">
+                            <input type="checkbox" id="postProcessRequired" checked class="h-5 w-5 text-primary border-gray-300 rounded focus:ring-primary">
+                            <label for="postProcessRequired" class="text-sm font-bold text-gray-200">Post Processing Required?</label>
+                        </div>
+
+                        <div id="laborInputsContainer">
+                            <div class="input-group">
+                                <label for="postProcessType" class="block text-sm">Type of Post Processing</label>
+                                <select id="postProcessType" class="mt-1 w-full p-2 border rounded-lg focus:ring-primary">
+                                    <option value="sanding">Sanding & Smoothing</option>
+                                    <option value="painting">Painting</option>
+                                    <option value="welding">Welding</option>
+                                    <option value="finishing">Finishing</option>
+                                    <option value="coating">Coating</option>
+                                    <option value="other">Other/Assembly</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label for="postProcessHours" class="block text-sm">Post-Processing Time (Hours)</label>
+                                <input type="number" id="postProcessHours" value="1.0" step="0.1" min="0" class="mt-1 w-full p-2 border rounded-lg focus:ring-primary">
+                            </div>
+                            <div class="input-group">
+                                <label for="postProcessRate" class="block text-sm">Post-Processing Hourly Rate ($)</label>
+                                <input type="number" id="postProcessRate" value="20.00" step="1" min="0" class="mt-1 w-full p-2 border rounded-lg focus:ring-primary">
+                            </div>
+                        </div>
+                        
+                        <!-- DYNAMIC PROFIT/RATE INPUTS START HERE -->
+                        
+                        <!-- Hybrid Flat Fee Input -->
+                        <div class="input-group" id="hybridFlatFeeInput" style="display: none;">
+                            <label for="flatBaseFee" class="block text-sm font-bold text-primary">Hybrid: Flat Base Fee ($)</label>
+                            <input type="number" id="flatBaseFee" value="5.00" step="0.5" min="0" class="mt-1 w-full p-2 border rounded-lg focus:ring-secondary">
+                            <p class="text-xs text-gray-400 mt-1">Covers minimum job overhead, admin, and quoting.</p>
+                        </div>
+
+                        <!-- Hybrid Hourly Rate Input -->
+                        <div class="input-group" id="hybridHourlyRateInput" style="display: none;">
+                            <label for="hybridHourlyRate" class="block text-sm font-bold text-primary">Hybrid: Time-Based Hourly Rate ($)</label>
+                            <input type="number" id="hybridHourlyRate" value="7.50" step="0.5" min="0" class="mt-1 w-full p-2 border rounded-lg focus:ring-secondary">
+                            <p class="text-xs text-gray-400 mt-1">Covers machine use, depreciation, energy, and profit for time.</p>
+                        </div>
+
+                        <!-- Hybrid Cost Per Gram Input -->
+                        <div class="input-group" id="hybridCostPerGramInput" style="display: none;">
+                            <label for="hybridCostPerGram" class="block text-sm font-bold text-primary">Hybrid: Material Cost Per Gram ($)</label>
+                            <input type="number" id="hybridCostPerGram" value="0.15" step="0.01" min="0" class="mt-1 w-full p-2 border rounded-lg focus:ring-secondary">
+                            <p class="text-xs text-gray-400 mt-1">Covers filament, supports, and profit for material.</p>
+                        </div>
+                        
+                        <!-- Standard Profit (%) (Cost Plus, Hybrid, Tiered) -->
+                        <div class="input-group" id="profitInputContainer">
+                            <label for="profitWantedValue" class="block text-sm">Desired Profit (%)</label>
+                            <input type="number" id="profitWantedValue" value="30" step="1" min="0" max="1000" class="mt-1 w-full p-2 border rounded-lg focus:ring-primary">
+                        </div>
+
+                        <!-- Value Based Price Input (Visible for Value Based model) -->
+                        <div class="input-group" id="valueBasedInput" style="display: none;">
+                            <label for="targetSellingPrice" class="block text-sm font-bold text-accent-red">Target Selling Price (Value-Based)</label>
+                            <input type="number" id="targetSellingPrice" value="100.00" step="1" min="0" class="mt-1 w-full p-2 border border-accent-red rounded-lg focus:ring-accent-red">
+                            <p class="text-xs text-gray-400 mt-1">What final price is the customer willing to pay for the perceived value?</p>
+                        </div>
+                        
+                        <!-- Per Gram Rate Input (Visible for Per Gram model) -->
+                        <div class="input-group" id="perGramInput" style="display: none;">
+                            <label for="userRatePerGram" class="block text-sm font-bold text-secondary">Your Selling Price Per Gram ($)</label>
+                            <input type="number" id="userRatePerGram" value="0.25" step="0.01" min="0" class="mt-1 w-full p-2 border border-secondary rounded-lg focus:ring-secondary">
+                            <p class="text-xs text-gray-400 mt-1">This rate includes material cost, machine wear, and your desired profit.</p>
+                        </div>
+
+                        <!-- Per Hour Rate Input (Visible for Per Hour model) -->
+                        <div class="input-group" id="perHourInput" style="display: none;">
+                            <label for="userRatePerHour" class="block text-sm font-bold text-primary">Total Selling Rate Per Hour ($)</label>
+                            <input type="number" id="userRatePerHour" value="15.00" step="1" min="0" class="mt-1 w-full p-2 border border-primary rounded-lg focus:ring-primary">
+                            <p class="text-xs text-gray-400 mt-1">This rate covers machine time, depreciation, and profit.</p>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="discountsApplied" class="block text-sm">Discounts Applied (%)</label>
+                            <input type="number" id="discountsApplied" value="0" step="1" min="0" max="100" class="mt-1 w-full p-2 border rounded-lg focus:ring-primary">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Delivery & Packaging - Orange Sub Header -->
+                <div class="md:col-span-2">
+                    <h2 class="text-xl font-bold text-secondary mb-3 border-b border-light-graphite pb-2">5. Delivery & Packaging</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="input-group">
+                            <label for="packagingCost" class="block text-sm">Packaging Cost (Boxes, Labels, Padding) ($)</label>
+                            <input type="number" id="packagingCost" value="1.50" step="0.1" min="0" class="mt-1 w-full p-2 border rounded-lg focus:ring-primary">
+                            <p class="text-xs text-gray-400 mt-1">This cost is always absorbed by the seller (added to Base Cost).</p>
+                        </div>
+                        <div class="input-group">
+                            <label for="shippingCost" class="block text-sm">Shipping/Delivery Service Cost ($)</label>
+                            <input type="number" id="shippingCost" value="8.00" step="1" min="0" class="mt-1 w-full p-2 border rounded-lg focus:ring-primary">
+                        </div>
+                        <div class="input-group">
+                            <label for="shippingMode" class="block text-sm">Shipping Mode</label>
+                            <select id="shippingMode" class="mt-1 w-full p-2 border rounded-lg focus:ring-primary">
+                                <option value="customer_pays">Customer Pays Shipping</option>
+                                <option value="seller_pays">Free Shipping (Seller Pays)</option>
+                            </select>
+                            <p class="text-xs text-gray-400 mt-1">Determines who absorbs the Shipping Cost.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 6. Consumable Supplies (Pro-rata) - Orange Sub Header -->
+                <div class="md:col-span-2" id="section6Inputs">
+                    <h2 class="text-xl font-bold text-secondary mb-3 border-b border-light-graphite pb-2">6. Consumable Supplies (Pro-rata)</h2>
+                    <p class="text-sm text-gray-400 mb-4">Add supplies that are consumed over several prints (e.g., nozzles, adhesives, IPA). The cost is spread evenly across the expected life.</p>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end mb-4">
+                        <div class="input-group col-span-1">
+                            <label for="newSupplyName" class="block text-sm">Supply Name</label>
+                            <input type="text" id="newSupplyName" placeholder="e.g., Nozzle, Bed Spray" class="mt-1 w-full p-2 border rounded-lg focus:ring-primary">
+                        </div>
+                        <div class="input-group col-span-1">
+                            <label for="newSupplyCost" class="block text-sm">Total Cost</label>
+                            <input type="number" id="newSupplyCost" value="10" step="0.1" min="0.01" class="mt-1 w-full p-2 border rounded-lg focus:ring-primary">
+                        </div>
+                        <div class="input-group col-span-1">
+                            <label for="newSupplyPrints" class="block text-sm">Prints Covered</label>
+                            <input type="number" id="newSupplyPrints" value="50" step="1" min="1" class="mt-1 w-full p-2 border rounded-lg focus:ring-primary">
+                        </div>
+                        <div class="col-span-1">
+                            <button id="addSupplyBtn" class="w-full bg-secondary hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg transition duration-150 shadow-md">
+                                Add Supply
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="supplyListContainer" class="space-y-2 p-3 bg-light-graphite rounded-lg border border-gray-700">
+                        <!-- Supplies will be listed here -->
+                        <p class="text-sm text-gray-500 text-center" id="emptySupplyMessage">No consumables added yet.</p>
+                    </div>
+                </div>
+
+
+            </div>
+
+            <!-- Results Section -->
+            <div class="mt-8 pt-6 border-t border-light-graphite">
+                <!-- Calculated Price Summary - Orange Sub Header -->
+                <h2 class="text-2xl font-bold text-secondary mb-4">7. Calculated Price Summary</h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    
+                    <!-- Break-Even Cost (Total Cost) -->
+                    <div class="summary-box-cost p-4 rounded-xl shadow-inner">
+                        <p class="text-sm text-gray-400 font-semibold">Base Cost (Break-Even)</p>
+                        <p id="totalCost" class="text-2xl font-extrabold text-gray-200 mt-1">$0.00</p>
+                        <p class="text-xs text-gray-500 mt-1">All fixed and labor costs.</p>
+                    </div>
+
+                    <!-- Profit/Markup -->
+                    <div class="summary-box-cost p-4 rounded-xl shadow-inner">
+                        <p class="text-sm text-gray-400 font-semibold">Profit (Cost Plus Model)</p>
+                        <p id="profitValue" class="text-2xl font-extrabold text-secondary mt-1">$0.00</p>
+                        <p class="text-xs text-gray-500 mt-1">Your desired income.</p>
+                    </div>
+                    
+                    <!-- Final Price - Baby Blue (Primary) Accent -->
+                    <div class="bg-primary text-white p-4 rounded-xl shadow-lg border border-primary/50">
+                        <p class="text-sm font-semibold opacity-90">Total Retail Price</p>
+                        <p id="finalPrice" class="text-3xl font-extrabold mt-1 leading-none">$0.00</p>
+                        <p class="text-xs opacity-70 mt-1">Final price including delivery, minus discounts.</p>
+                    </div>
+                </div>
+
+                <!-- Detailed Breakdown -->
+                <div class="mt-6">
+                    <h3 class="text-lg font-semibold text-gray-200 mb-2">Cost Breakdown</h3>
+                    <ul class="text-sm space-y-1 text-gray-300 list-disc list-inside bg-light-graphite p-4 rounded-lg">
+                        <li id="costMaterial">Material Cost: $0.00</li>
+                        <li id="costElectric">Electricity Cost: $0.00</li>
+                        <li id="costDepreciation">Depreciation & Maintenance: $0.00</li>
+                        <li id="costConsumables">Consumable Supplies: $0.00</li>
+                        <li id="costLabor">Post-Processing Labor: $0.00</li>
+                        <li id="costPackaging">Packaging Cost: $0.00</li>
+                        <li id="costDeliverySeller">Delivery Cost (Absorbed by Seller - Free Shipping): $0.00</li>
+                        <!-- Delivery Fee Paid by Customer is Baby Blue/Primary -->
+                        <li id="costDeliveryCustomer" class="text-primary">Delivery Fee (Paid by Customer): $0.00</li>
+                        <!-- Discounts Applied is Red/Accent Red -->
+                        <li id="costDiscount" class="text-accent-red">Discounts Applied: $0.00</li>
+                    </ul>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Global array to store consumable supply objects
+        let consumableSupplies = [];
+
+        // Global utility to format numbers as currency
+        const formatCurrency = (value, symbol) => {
+            const num = parseFloat(value);
+            if (isNaN(num)) return symbol + '0.00';
+            // Use Math.round for display currency, but calculations use full precision
+            return symbol + num.toFixed(2);
+        };
+
+        // --- UI TOGGLE FUNCTIONS ---
+
+        // Toggles visibility/disabled state of labor inputs
+        const toggleLaborInputs = (isRequired) => {
+            const container = document.getElementById('laborInputsContainer');
+            const inputs = container.querySelectorAll('input, select');
+            
+            if (isRequired) {
+                container.style.display = 'block';
+                inputs.forEach(input => input.disabled = false);
+            } else {
+                container.style.display = 'none';
+                inputs.forEach(input => input.disabled = true);
+            }
+        }
+        
+        // Toggles visibility of rate/profit inputs and sections based on the selected pricing model
+        const toggleInputsBasedOnModel = (model) => {
+            // Get dynamic input elements
+            const profitInput = document.getElementById('profitInputContainer');
+            const targetPriceInput = document.getElementById('valueBasedInput');
+            const ratePerGramInput = document.getElementById('perGramInput');
+            const ratePerHourInput = document.getElementById('perHourInput');
+            
+            const hybridFlatFeeInput = document.getElementById('hybridFlatFeeInput');
+            const hybridHourlyRateInput = document.getElementById('hybridHourlyRateInput');
+            const hybridCostPerGramInput = document.getElementById('hybridCostPerGramInput');
+            
+            // Core sections whose visibility changes based on model type
+            const section3Inputs = document.getElementById('section3Inputs'); // Print & Material Costs
+            const section6Inputs = document.getElementById('section6Inputs'); // Consumable Supplies
+
+
+            // Reset visibility
+            profitInput.style.display = 'block';
+            targetPriceInput.style.display = 'none';
+            ratePerGramInput.style.display = 'none';
+            ratePerHourInput.style.display = 'none';
+            hybridFlatFeeInput.style.display = 'none';
+            hybridHourlyRateInput.style.display = 'none';
+            hybridCostPerGramInput.style.display = 'none';
+            
+            // Show all core sections by default
+            section3Inputs.style.display = 'block';
+            section6Inputs.style.display = 'block';
+
+
+            // Set visibility based on model
+            if (model === 'value_based') {
+                profitInput.style.display = 'none';
+                targetPriceInput.style.display = 'block';
+            } else if (model === 'per_gram') {
+                profitInput.style.display = 'none';
+                ratePerGramInput.style.display = 'block';
+            } else if (model === 'per_hour') {
+                profitInput.style.display = 'none';
+                ratePerHourInput.style.display = 'block';
+            } else if (model === 'hybrid') {
+                 // Hybrid model uses its own rates and flat fee (profit is built-in)
+                profitInput.style.display = 'none';
+                hybridFlatFeeInput.style.display = 'block';
+                hybridHourlyRateInput.style.display = 'block';
+                hybridCostPerGramInput.style.display = 'block';
+                
+                // Hide unnecessary sections as hybrid rates are all-inclusive
+                section3Inputs.style.display = 'none'; 
+                section6Inputs.style.display = 'none';
+            }
+            // Cost Plus and Tiered keep the standard Profit (%) input visible and all core sections visible.
+        };
+
+
+        // Renders the list of added supplies in the UI
+        const renderSupplies = () => {
+            const container = document.getElementById('supplyListContainer');
+            const currencySymbol = document.getElementById('currencySymbol').value;
+            container.innerHTML = ''; 
+
+            if (consumableSupplies.length === 0) {
+                container.innerHTML = '<p class="text-sm text-gray-500 text-center" id="emptySupplyMessage">No consumables added yet.</p>';
+                return;
+            }
+
+            consumableSupplies.forEach((supply, index) => {
+                const costPerPrint = supply.cost / supply.printsCovered;
+                
+                const itemHtml = `
+                    <div class="flex justify-between items-center p-2 border-b border-gray-700 last:border-b-0 bg-light-graphite/50 rounded-md shadow-sm">
+                        <span class="font-medium text-gray-200">${supply.name}</span>
+                        <div class="text-right text-sm">
+                            <span class="text-gray-400">${formatCurrency(supply.cost, currencySymbol)} over ${supply.printsCovered} prints = </span>
+                            <span class="font-semibold text-primary">${formatCurrency(costPerPrint, currencySymbol)} per print</span>
+                            <button onclick="removeSupply(${index})" class="ml-3 text-accent-red hover:text-red-400 transition duration-150 text-xs font-bold p-1 rounded-md bg-accent-red/20">
+                                Remove
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', itemHtml);
+            });
+        };
+
+        // Removes a supply item by index
+        window.removeSupply = (index) => {
+            consumableSupplies.splice(index, 1);
+            renderSupplies();
+            calculatePrice();
+        };
+
+        // Adds a new supply item
+        const addSupply = () => {
+            const nameInput = document.getElementById('newSupplyName');
+            const costInput = document.getElementById('newSupplyCost');
+            const printsInput = document.getElementById('newSupplyPrints');
+
+            const name = nameInput.value.trim();
+            const cost = parseFloat(costInput.value);
+            const printsCovered = parseInt(printsInput.value);
+
+            if (!name) {
+                console.error('Please enter a name for the supply.');
+                return;
+            }
+            if (isNaN(cost) || cost <= 0) {
+                console.error('Please enter a valid total cost for the supply.');
+                return;
+            }
+            if (isNaN(printsCovered) || printsCovered < 1) {
+                console.error('Please enter a valid number of prints the supply covers (at least 1).');
+                return;
+            }
+
+            const newSupply = {
+                name: name,
+                cost: cost,
+                printsCovered: printsCovered,
+            };
+
+            consumableSupplies.push(newSupply);
+            
+            // Clear inputs after adding
+            nameInput.value = '';
+            costInput.value = '10';
+            printsInput.value = '50';
+
+            renderSupplies();
+            calculatePrice();
+        };
+
+
+        // Main calculation function
+        const calculatePrice = () => {
+            // --- 1. Get all raw input values ---
+            const pricingModel = document.getElementById('pricingModel').value;
+            const currencySymbol = document.getElementById('currencySymbol').value;
+            const printerCost = parseFloat(document.getElementById('printerCost').value) || 0;
+            const breakevenHours = parseFloat(document.getElementById('breakevenHours').value) || 1; // Prevent division by zero
+
+            const filamentCostPerKg = parseFloat(document.getElementById('filamentCostPerKg').value) || 0;
+            const filamentUsedGrams = parseFloat(document.getElementById('filamentUsedGrams').value) || 0;
+            const printTimeHours = parseFloat(document.getElementById('printTimeHours').value) || 0;
+            const printerPowerWatts = parseFloat(document.getElementById('printerPowerWatts').value) || 0;
+            const elecRatePerKwh = parseFloat(document.getElementById('elecRatePerKwh').value) || 0;
+
+            const postProcessRequired = document.getElementById('postProcessRequired').checked;
+            const postProcessHours = parseFloat(document.getElementById('postProcessHours').value) || 0;
+            const postProcessRate = parseFloat(document.getElementById('postProcessRate').value) || 0;
+
+            const discountsAppliedPercent = parseFloat(document.getElementById('discountsApplied').value) || 0;
+            const profitWantedValue = parseFloat(document.getElementById('profitWantedValue').value) || 0;
+
+            // DYNAMIC RATE INPUTS
+            const targetSellingPrice = parseFloat(document.getElementById('targetSellingPrice')?.value) || 0;
+            const userRatePerGram = parseFloat(document.getElementById('userRatePerGram')?.value) || 0;
+            const userRatePerHour = parseFloat(document.getElementById('userRatePerHour')?.value) || 0;
+            
+            // NEW HYBRID INPUTS
+            const flatBaseFee = parseFloat(document.getElementById('flatBaseFee')?.value) || 0;
+            const hybridHourlyRate = parseFloat(document.getElementById('hybridHourlyRate')?.value) || 0;
+            const hybridCostPerGram = parseFloat(document.getElementById('hybridCostPerGram')?.value) || 0;
+
+
+            // DELIVERY/PACKAGING INPUTS
+            const packagingCost = parseFloat(document.getElementById('packagingCost').value) || 0;
+            const shippingCost = parseFloat(document.getElementById('shippingCost').value) || 0;
+            const shippingMode = document.getElementById('shippingMode').value;
+
+
+            // --- 2. Calculate Sub-Costs (Core Costs) ---
+            
+            // A. Material Cost (Actual Cost for Break-Even)
+            const costMaterial = (filamentUsedGrams / 1000) * filamentCostPerKg;
+
+            // B. Electricity Cost (Actual Cost for Break-Even)
+            const costElectric = (printerPowerWatts / 1000) * printTimeHours * elecRatePerKwh;
+
+            // C. Labor Cost (Post-Processing) (Actual Cost for Break-Even)
+            const costLabor = postProcessRequired ? (postProcessHours * postProcessRate) : 0;
+
+            // D. Equipment Depreciation & Maintenance (Actual Cost for Break-Even)
+            const hourlyDepreciationRate = printerCost / breakevenHours;
+            const costDepreciation = hourlyDepreciationRate * printTimeHours;
+            // 5% maintenance rule applied to depreciation cost
+            const costMaintenance = costDepreciation * 0.05; 
+            const costDepreciationTotal = costDepreciation + costMaintenance;
+
+            // E. Consumable Supplies (Pro-Rata Cost) (Actual Cost for Break-Even)
+            let costConsumables = 0;
+            if (consumableSupplies.length > 0) {
+                costConsumables = consumableSupplies.reduce((sum, supply) => {
+                    return sum + (supply.cost / supply.printsCovered);
+                }, 0);
+            }
+
+            // F. Packaging Cost (Actual Cost for Break-Even)
+            const costPackaging = packagingCost;
+            
+            // G. Shipping/Delivery Cost (Conditional)
+            let costDeliverySeller = 0; 
+            let customerDeliveryCharge = 0; 
+
+            if (shippingMode === 'seller_pays') {
+                costDeliverySeller = shippingCost;
+            } else {
+                customerDeliveryCharge = shippingCost;
+            }
+
+
+            // --- 3. Determine Price based on Model ---
+            let totalCost = 0; // Base Cost (Break-Even)
+            let priceBeforeDiscount = 0; // Price including profit, before discount
+            let profitValue = 0; // Calculated profit amount
+
+            // Calculate core costs independent of labor/shipping (used for break-even point)
+            const coreMaterialCost = costMaterial + costElectric + costDepreciationTotal + costConsumables + costPackaging;
+            
+            // Calculate the total actual cost (break-even point for this job)
+            totalCost = coreMaterialCost + costLabor + costDeliverySeller;
+
+            
+            switch (pricingModel) {
+                case 'cost_plus':
+                case 'tiered_volume':
+                    // Uses Cost Plus Logic
+                    const printWeight = filamentUsedGrams;
+                    let profitMultiplier = profitWantedValue / 100;
+
+                    if (pricingModel === 'tiered_volume') {
+                        // Tiered Volume: adjust profit multiplier based on filament weight (grams).
+                        if (printWeight > 500) {
+                            profitMultiplier *= 1.4; // Large prints (40% higher multiplier)
+                        } else if (printWeight >= 100) {
+                            profitMultiplier *= 1.2; // Medium prints (20% higher multiplier)
+                        }
+                    }
+                    
+                    profitValue = totalCost * profitMultiplier;
+                    priceBeforeDiscount = totalCost + profitValue;
+                    break;
+                
+                case 'hybrid':
+                    // Hybrid: Flat Fee + Time Charge + Material Charge
+                    const totalRuntime = printTimeHours + postProcessHours; // Covers all time as confirmed
+                    
+                    const timeCharge = totalRuntime * hybridHourlyRate;
+                    const materialCharge = filamentUsedGrams * hybridCostPerGram;
+                    
+                    // The Hybrid Price is calculated using the established rates
+                    priceBeforeDiscount = flatBaseFee + timeCharge + materialCharge + costPackaging + costDeliverySeller;
+                    
+                    // Profit is calculated by subtracting the actual cost (totalCost) from the selling price
+                    profitValue = priceBeforeDiscount - totalCost;
+                    break;
+
+                case 'per_gram':
+                    // Price = (User Rate Per Gram * Grams Used) + Labor + Packaging + Delivery (if seller pays)
+                    priceBeforeDiscount = (userRatePerGram * filamentUsedGrams) + costLabor + costPackaging + costDeliverySeller;
+                    
+                    // Profit is the difference between the selling price and the cost
+                    profitValue = priceBeforeDiscount - totalCost;
+                    break;
+                
+                case 'per_hour':
+                    const totalHours = printTimeHours + postProcessHours;
+                    // Price = (User Rate Per Hour * Total Hours) + Material + Consumables + Packaging + Delivery (if seller pays)
+                    priceBeforeDiscount = (userRatePerHour * totalHours) + costMaterial + costConsumables + costPackaging + costDeliverySeller;
+                    
+                    // Profit is the difference
+                    profitValue = priceBeforeDiscount - totalCost;
+                    break;
+                
+                case 'value_based':
+                    // Price before discount IS the target price (Price to Value)
+                    priceBeforeDiscount = targetSellingPrice;
+                    
+                    // Profit is the difference (Value - Cost)
+                    profitValue = priceBeforeDiscount - totalCost;
+                    break;
+            }
+            
+            // Ensure profit is not negative (we don't sell at a loss unless intended via discount)
+            profitValue = Math.max(0, profitValue);
+
+            // --- 4. Apply Discounts and Finalize Price ---
+            
+            // Calculate Discount Amount (applied to price before customer delivery charge)
+            const discountAmount = priceBeforeDiscount * (discountsAppliedPercent / 100);
+
+            // Price after discount, but before the customer's delivery charge
+            let finalPrice = priceBeforeDiscount - discountAmount;
+            
+            // Add Delivery Charge IF Customer is Paying
+            finalPrice += customerDeliveryCharge;
+            
+            finalPrice = Math.max(0, finalPrice);
+
+            // Update Breakdown Profit (reflects actual profit made after discount)
+            const finalProfitDisplay = priceBeforeDiscount - totalCost - discountAmount;
+
+
+            // --- 5. Update UI ---
+            document.getElementById('totalCost').innerText = formatCurrency(totalCost, currencySymbol);
+            document.getElementById('profitValue').innerText = formatCurrency(finalProfitDisplay, currencySymbol);
+            document.getElementById('finalPrice').innerText = formatCurrency(finalPrice, currencySymbol);
+
+            // Update Breakdown List
+            document.getElementById('costMaterial').innerText = `Material Cost: ${formatCurrency(costMaterial, currencySymbol)} (${(filamentUsedGrams / 1000).toFixed(3)}kg)`;
+            document.getElementById('costElectric').innerText = `Electricity Cost: ${formatCurrency(costElectric, currencySymbol)}`;
+            document.getElementById('costDepreciation').innerText = `Depreciation & Maintenance: ${formatCurrency(costDepreciationTotal, currencySymbol)} (Hourly Rate: ${formatCurrency(hourlyDepreciationRate.toFixed(2), currencySymbol)})`;
+            document.getElementById('costConsumables').innerText = `Consumable Supplies: ${formatCurrency(costConsumables, currencySymbol)}`;
+
+            // Labor breakdown includes type if required
+            const postProcessType = postProcessRequired ? ` (${document.getElementById('postProcessType').value.toUpperCase()})` : '';
+            document.getElementById('costLabor').innerText = `Post-Processing Labor: ${formatCurrency(costLabor, currencySymbol)}${postProcessType}`;
+
+            document.getElementById('costPackaging').innerText = `Packaging Cost: ${formatCurrency(costPackaging, currencySymbol)}`;
+
+            // Delivery Breakdown
+            document.getElementById('costDeliverySeller').innerText = `Delivery Cost (Absorbed by Seller - Free Shipping): ${formatCurrency(costDeliverySeller, currencySymbol)}`;
+            document.getElementById('costDeliveryCustomer').innerText = `Delivery Fee (Paid by Customer): ${formatCurrency(customerDeliveryCharge, currencySymbol)}`;
+
+            // Discount Breakdown
+            document.getElementById('costDiscount').innerText = `Discounts Applied: -${formatCurrency(discountAmount, currencySymbol)} (${discountsAppliedPercent}% Discount)`;
+
+            // Update Profit Label
+            const profitLabelMap = {
+                'cost_plus': 'Cost Plus', 'hybrid': 'Hybrid', 'per_gram': 'Per Gram', 
+                'per_hour': 'Per Hour', 'tiered_volume': 'Tiered Volume', 'value_based': 'Value Based'
+            };
+            document.querySelector('#profitValue').previousElementSibling.innerText = `Profit (${profitLabelMap[pricingModel]} Model)`;
+            
+            // Always toggle labor inputs and pricing model inputs after calculation
+            toggleLaborInputs(postProcessRequired);
+            toggleInputsBasedOnModel(pricingModel);
+        };
+
+        // Event Listeners for all inputs
+        document.addEventListener('DOMContentLoaded', () => {
+            const inputs = document.querySelectorAll('#inputs input:not(#newSupplyName):not(#newSupplyCost):not(#newSupplyPrints), #inputs select');
+            inputs.forEach(input => {
+                input.addEventListener('input', calculatePrice);
+            });
+
+            document.getElementById('pricingModel').addEventListener('change', (e) => {
+                toggleInputsBasedOnModel(e.target.value);
+                calculatePrice();
+            });
+            
+            // Listener for the new Post Processing checkbox
+            document.getElementById('postProcessRequired').addEventListener('change', (e) => {
+                toggleLaborInputs(e.target.checked);
+                calculatePrice();
+            });
+
+            document.getElementById('addSupplyBtn').addEventListener('click', addSupply);
+
+            // Initial rendering and calculation
+            renderSupplies();
+            // Get initial state of model and labor requirement
+            const initialModel = document.getElementById('pricingModel').value;
+            const initialLaborRequired = document.getElementById('postProcessRequired').checked;
+            toggleLaborInputs(initialLaborRequired);
+            toggleInputsBasedOnModel(initialModel); 
+            calculatePrice();
+        });
+    </script>
+</body>
+</html>
